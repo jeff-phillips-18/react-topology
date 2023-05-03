@@ -7,7 +7,14 @@ import NodeLabel from '../../../components/nodes/labels/NodeLabel';
 import { Layer } from '../../../components/layers';
 import { GROUPS_LAYER } from '../../../const';
 import { maxPadding, useCombineRefs, useHover } from '../../../utils';
-import { BadgeLocation, isGraph, LabelPosition, Node, NodeStyle } from '../../../types';
+import {
+  BadgeLocation,
+  GraphElement,
+  isGraph,
+  LabelPosition,
+  Node,
+  NodeStyle
+} from '../../../types';
 import {
   useDragNode,
   WithContextMenuProps,
@@ -19,7 +26,7 @@ import { CollapsibleGroupProps } from '../../../components';
 
 type DefaultTaskGroupProps = {
   className?: string;
-  element: Node;
+  element: GraphElement;
   droppable?: boolean;
   canDrop?: boolean;
   dropTarget?: boolean;
@@ -70,12 +77,13 @@ const DefaultTaskGroup: React.FunctionComponent<DefaultTaskGroupProps> = ({
   labelIconPadding,
   onCollapseChange
 }) => {
+  const nodeElement = element as Node;
   const [hovered, hoverRef] = useHover();
   const [labelHover, labelHoverRef] = useHover();
   const dragLabelRef = useDragNode()[1];
   const refs = useCombineRefs<SVGPathElement>(hoverRef, dragNodeRef);
   const isHover = hover !== undefined ? hover : hovered;
-  const labelPosition = element.getLabelPosition();
+  const labelPosition = nodeElement.getLabelPosition();
 
   let parent = element.getParent();
   let altGroup = false;
@@ -84,7 +92,7 @@ const DefaultTaskGroup: React.FunctionComponent<DefaultTaskGroupProps> = ({
     parent = parent.getParent();
   }
 
-  const children = element.getNodes().filter(c => c.isVisible());
+  const children = nodeElement.getNodes().filter(c => c.isVisible());
 
   // cast to number and coerce
   const padding = maxPadding(element.getStyle<NodeStyle>().padding ?? 17);
@@ -154,7 +162,7 @@ const DefaultTaskGroup: React.FunctionComponent<DefaultTaskGroupProps> = ({
           paddingX={8}
           paddingY={5}
           dragRef={dragNodeRef ? dragLabelRef : undefined}
-          status={element.getNodeStatus()}
+          status={nodeElement.getNodeStatus()}
           secondaryLabel={secondaryLabel}
           truncateLength={truncateLength}
           badge={badge}
@@ -170,7 +178,7 @@ const DefaultTaskGroup: React.FunctionComponent<DefaultTaskGroupProps> = ({
           contextMenuOpen={contextMenuOpen}
           hover={isHover || labelHover}
           actionIcon={collapsible ? <CollapseIcon /> : undefined}
-          onActionIconClick={() => onCollapseChange(element, true)}
+          onActionIconClick={() => onCollapseChange(nodeElement, true)}
         >
           {label || element.getLabel()}
         </NodeLabel>

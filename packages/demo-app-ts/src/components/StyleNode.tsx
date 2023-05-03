@@ -5,6 +5,7 @@ import {
   DEFAULT_LAYER,
   DefaultNode,
   getDefaultShapeDecoratorCenter,
+  GraphElement,
   Layer,
   Node,
   NodeShape,
@@ -36,7 +37,7 @@ export enum DataTypes {
 const ICON_PADDING = 20;
 
 type StyleNodeProps = {
-  element: Node;
+  element: GraphElement;
   getCustomShape?: (node: Node) => React.FunctionComponent<ShapeProps>;
   getShapeDecoratorCenter?: (quadrant: TopologyQuadrant, node: Node) => { x: number; y: number };
   showLabel?: boolean; // Defaults to true
@@ -44,10 +45,12 @@ type StyleNodeProps = {
   showStatusDecorator?: boolean; // Defaults to false
   regrouping?: boolean;
   dragging?: boolean;
-} & WithContextMenuProps &
+} & Partial<
+  WithContextMenuProps &
   WithCreateConnectorProps &
   WithDragNodeProps &
-  WithSelectionProps;
+  WithSelectionProps
+>;
 
 const getTypeIcon = (dataType?: DataTypes): any => {
   switch (dataType) {
@@ -131,6 +134,7 @@ const StyleNode: React.FunctionComponent<StyleNodeProps> = ({
   onHideCreateConnector,
   ...rest
 }) => {
+  const nodeElement = element as Node;
   const data = element.getData();
   const detailsLevel = useDetailsLevel();
   const [hover, hoverRef] = useHover();
@@ -166,7 +170,7 @@ const StyleNode: React.FunctionComponent<StyleNodeProps> = ({
           showLabel={hover || (detailsLevel !== ScaleDetailsLevel.low && showLabel)}
           showStatusBackground={!hover && detailsLevel === ScaleDetailsLevel.low}
           showStatusDecorator={detailsLevel === ScaleDetailsLevel.high && passedData.showStatusDecorator}
-          statusDecoratorTooltip={element.getNodeStatus()}
+          statusDecoratorTooltip={nodeElement.getNodeStatus()}
           onContextMenu={data.showContextMenu ? onContextMenu : undefined}
           contextMenuOpen={contextMenuOpen}
           onShowCreateConnector={detailsLevel !== ScaleDetailsLevel.low ? onShowCreateConnector : undefined}
@@ -174,10 +178,10 @@ const StyleNode: React.FunctionComponent<StyleNodeProps> = ({
           labelIcon={LabelIcon && <LabelIcon noVerticalAlign />}
           attachments={
             (hover || detailsLevel === ScaleDetailsLevel.high) &&
-            renderDecorators(element, passedData, rest.getShapeDecoratorCenter)
+            renderDecorators(nodeElement, passedData, rest.getShapeDecoratorCenter)
           }
         >
-          {(hover || detailsLevel !== ScaleDetailsLevel.low) && renderIcon(passedData, element)}
+          {(hover || detailsLevel !== ScaleDetailsLevel.low) && renderIcon(passedData, nodeElement)}
         </DefaultNode>
       </g>
     </Layer>

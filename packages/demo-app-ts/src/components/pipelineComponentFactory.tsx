@@ -15,11 +15,12 @@ import {
   withSelection,
   withPanZoom,
   GraphComponent,
-  TaskEdge
+  TaskEdge,
 } from '@patternfly/react-topology';
 import DemoTaskNode from './DemoTaskNode';
 import DemoFinallyNode from './DemoFinallyNode';
 import DemoTaskGroupEdge from './DemoTaskGroupEdge';
+import { ComponentType } from 'react';
 
 export const GROUPED_EDGE_TYPE = 'GROUPED_EDGE';
 
@@ -42,7 +43,7 @@ const defaultMenu = createContextMenuItems('First', 'Second', 'Third', '-', 'Fou
 const pipelineComponentFactory: ComponentFactory = (
   kind: ModelKind,
   type: string
-): React.ComponentType<{ element: GraphElement }> | undefined => {
+): ComponentType<{ element: GraphElement }> | undefined => {
   if (kind === ModelKind.graph) {
     return withPanZoom()(GraphComponent);
   }
@@ -52,7 +53,6 @@ const pipelineComponentFactory: ComponentFactory = (
     case DEFAULT_FINALLY_NODE_TYPE:
       return withContextMenu(() => defaultMenu)(withSelection()(DemoFinallyNode));
     case 'task-group':
-      return DefaultTaskGroup;
     case 'finally-group':
       return DefaultTaskGroup;
     case DEFAULT_SPACER_NODE_TYPE:

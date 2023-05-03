@@ -5,7 +5,7 @@ import styles from '../../../css/topology-pipelines';
 import topologyStyles from '../../../css/topology-components';
 import { Popover, PopoverProps, Tooltip } from '@patternfly/react-core';
 import { observer } from '../../../mobx-exports';
-import { AnchorEnd, Node, ScaleDetailsLevel } from '../../../types';
+import { AnchorEnd, GraphElement, Node, ScaleDetailsLevel } from '../../../types';
 import { RunStatus } from '../../types';
 import { OnSelect, useAnchor } from '../../../behavior';
 import { truncateMiddle } from '../../../utils/truncate-middle';
@@ -28,14 +28,12 @@ const STATUS_ICON_SIZE = 16;
 const SCALE_UP_TIME = 200;
 
 export interface TaskNodeProps {
-  /** Forwarded ref */
-  innerRef?: React.Ref<SVGGElement>;
   /** Additional content added to the node */
   children?: React.ReactNode;
   /** Additional classes added to the node */
   className?: string;
   /** The graph node element to represent */
-  element: Node;
+  element: GraphElement;
   /** Padding to use before and after contents */
   paddingX?: number;
   /** Padding to use above and below contents */
@@ -110,8 +108,7 @@ export interface TaskNodeProps {
   contextMenuOpen?: boolean;
 }
 
-const TaskNode: React.FC<TaskNodeProps & { innerRef: React.Ref<SVGGElement> }> = ({
-  innerRef,
+const TaskNode: React.FC<TaskNodeProps> = ({
   element,
   className,
   paddingX = 8,
@@ -150,13 +147,13 @@ const TaskNode: React.FC<TaskNodeProps & { innerRef: React.Ref<SVGGElement> }> =
   actionIconClassName,
   onActionIconClick,
   children
-}: TaskNodeProps & { innerRef?: React.Ref<SVGGElement> }) => {
-  const [hovered, innerHoverRef] = useHover();
-  const hoverRef = useCombineRefs(innerRef, innerHoverRef);
+}: TaskNodeProps) => {
+  const nodeElement = element as Node;
+  const [hovered, hoverRef] = useHover();
   const taskRef = React.useRef();
   const taskIconComponentRef = React.useRef();
   const isHover = hover !== undefined ? hover : hovered;
-  const { width } = element.getBounds();
+  const { width } = nodeElement.getBounds();
   const label = truncateMiddle(element.getLabel(), { length: truncateLength, omission: '...' });
   const [textSize, textRef] = useSize([label, className]);
   const nameLabelTriggerRef = React.useRef();
@@ -274,16 +271,16 @@ const TaskNode: React.FC<TaskNodeProps & { innerRef: React.Ref<SVGGElement> }> =
   ]);
 
   React.useEffect(() => {
-    const sourceEdges = element.getSourceEdges();
+    const sourceEdges = nodeElement.getSourceEdges();
     sourceEdges.forEach(edge => {
       const data = edge.getData();
       edge.setData({ ...(data || {}), indent: detailsLevel === ScaleDetailsLevel.high ? width - pillWidth : 0 });
     });
-  }, [detailsLevel, element, pillWidth, width]);
+  }, [detailsLevel, nodeElement, pillWidth, width]);
 
   const scale = element.getGraph().getScale();
   const nodeScale = useScaleNode(scaleNode, scale, SCALE_UP_TIME);
-  const { translateX, translateY } = getNodeScaleTranslation(element, nodeScale, scaleNode);
+  const { translateX, translateY } = getNodeScaleTranslation(nodeElement, nodeScale, scaleNode);
 
   const nameLabel = (
     <text ref={nameLabelRef} className={css(styles.topologyPipelinesPillText)} dominantBaseline="middle">
@@ -351,7 +348,7 @@ const TaskNode: React.FC<TaskNodeProps & { innerRef: React.Ref<SVGGElement> }> =
   const renderTask = () => {
     if (showStatusState && !scaleNode && hideDetailsAtMedium && detailsLevel !== ScaleDetailsLevel.high) {
       const statusBackgroundRadius = statusIconSize / 2 + 4;
-      const height = element.getBounds().height;
+      const height = nodeElement.getBounds().height;
       const upScale = 1 / scale;
 
       return (
@@ -496,6 +493,4 @@ const TaskNode: React.FC<TaskNodeProps & { innerRef: React.Ref<SVGGElement> }> =
 };
 TaskNode.displayName = 'TaskNode';
 
-export default observer(
-  React.forwardRef((props: TaskNodeProps, ref: React.Ref<SVGGElement>) => <TaskNode innerRef={ref} {...props} />)
-);
+export default observer(TaskNode);

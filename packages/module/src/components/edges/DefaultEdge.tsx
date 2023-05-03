@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as _ from 'lodash';
 import { observer } from 'mobx-react';
-import { Edge, EdgeTerminalType, isNode, NodeStatus } from '../../types';
+import { Edge, EdgeTerminalType, GraphElement, isEdge, isNode, NodeStatus } from '../../types';
 import { ConnectDragSource, OnSelect } from '../../behavior';
 import { getClosestVisibleParent, useHover } from '../../utils';
 import { Layer } from '../layers';
@@ -20,7 +20,7 @@ interface DefaultEdgeProps {
   /** Additional classes added to the edge */
   className?: string;
   /** The graph edge element to represent */
-  element: Edge;
+  element: GraphElement;
   /** Flag indicating if the user is dragging the edge */
   dragging?: boolean;
   /** The duration in seconds for the edge animation. Defaults to the animationSpeed set on the Edge's model */
@@ -65,7 +65,7 @@ interface DefaultEdgeProps {
   contextMenuOpen?: boolean;
 }
 
-const DefaultEdge: React.FunctionComponent<DefaultEdgeProps> = ({
+const DefaultEdgeInner: React.FunctionComponent<Omit<DefaultEdgeProps, 'element'> & { element: Edge }> = ({
   element,
   dragging,
   sourceDragRef,
@@ -187,6 +187,29 @@ const DefaultEdge: React.FunctionComponent<DefaultEdgeProps> = ({
         {children}
       </g>
     </Layer>
+  );
+};
+
+const DefaultEdge: React.FunctionComponent<DefaultEdgeProps>= ({
+  element,
+  startTerminalType = EdgeTerminalType.none,
+  startTerminalSize = 14,
+  endTerminalType = EdgeTerminalType.directional,
+  endTerminalSize = 14,
+  ...rest
+}: DefaultEdgeProps) => {
+  if (!isEdge(element)) {
+    throw new Error('DefaultEdge must be used only on Edge elements');
+  }
+  return (
+    <DefaultEdgeInner
+      element={element}
+      startTerminalType={startTerminalType}
+      startTerminalSize={startTerminalSize}
+      endTerminalType={endTerminalType}
+      endTerminalSize={endTerminalSize}
+      {...rest}
+    />
   );
 };
 
