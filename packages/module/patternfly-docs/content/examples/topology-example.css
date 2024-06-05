@@ -10,6 +10,7 @@
 .ws-extensions-t-selection,
 .ws-extensions-t-sidebar,
 .ws-extensions-t-toolbar {
+  height: 600px;
   border: 1px solid var(--pf-t--color--black);
   padding: 0;
   margin: var(--pf-t--global--spacer--300);

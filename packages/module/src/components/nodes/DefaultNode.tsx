@@ -17,8 +17,8 @@ import {
 } from '../../types';
 import { ConnectDragSource, ConnectDropTarget, OnSelect, WithDndDragProps } from '../../behavior';
 import Decorator from '../decorators/Decorator';
-import { Layer } from '../layers';
-import { TOP_LAYER } from '../../const';
+// import { Layer } from '../layers';
+// import { TOP_LAYER } from '../../const';
 import { createSvgIdUrl, StatusModifier, useCombineRefs, useHover } from '../../utils';
 import NodeLabel from './labels/NodeLabel';
 import NodeShadows, { NODE_SHADOW_FILTER_ID_DANGER, NODE_SHADOW_FILTER_ID_HOVER } from './NodeShadows';
@@ -359,7 +359,7 @@ const DefaultNodeInner: React.FunctionComponent<DefaultNodeInnerProps> = observe
           />
         )}
         {showLabel && (label || element.getLabel()) && (
-          <Layer id={isHover ? TOP_LAYER : undefined}>
+          // <Layer id={isHover ? TOP_LAYER : undefined}>
             <g transform={`scale(${labelScale})`}>
               <NodeLabel
                 className={css(styles.topologyNodeLabel, labelClassName)}
@@ -387,7 +387,7 @@ const DefaultNodeInner: React.FunctionComponent<DefaultNodeInnerProps> = observe
                 {label || element.getLabel()}
               </NodeLabel>
             </g>
-          </Layer>
+          // </Layer>
         )}
         {children}
       </g>

@@ -31,7 +31,7 @@
 
 
   --pf-topology__node--m-selected--node__background--Stroke: var(--pf-t--global--border--color--brand--default);
-  --pf-topology__node--m--hover--m-info--node__background--Stroke: var(--pf-t--global--border--color--nonstatus--blue--clicked);
+  --pf-topology__node--m--hover--m-info--node__background--Stroke: var(--pf-t--global--border--color--nonstatus--blue--hover);
   --pf-topology__node--m--hover--m-success--node__background--Stroke: var(--pf-t--global--border--color--status--success--hover);
   --pf-topology__node--m--hover--m-warning--node__background--Stroke: var(--pf-t--global--border--color--status--warning--hover);
   --pf-topology__node--m--hover--m-danger--node__background--Stroke: var(--pf-t--global--border--color--status--danger--hover);
@@ -83,11 +83,17 @@
   --pf-topology__node--m--hover--m-warning--node__label__background--Stroke: var(--pf-t--global--border--color--status--warning--hover);
   --pf-topology__node--m--hover--m-danger--node__label__background--Stroke: var(--pf-t--global--border--color--status--danger--hover);
 
-  --pf-topology__node--m-selected--node__label__background--Fill: var(--pf-t--global--color--brand--default);
+  --pf-topology__node--m-selected--node__label__background--Fill: var(--pf-t--global--color--brand--hover);
   --pf-topology__node--m-selected--m-info--node__label__background--Fill: var(--pf-t--global--color--nonstatus--blue--default);
   --pf-topology__node--m-selected--m-danger--node__label__background--Fill: var(--pf-t--global--color--status--danger--default);
   --pf-topology__node--m-selected--m-warning--node__label__background--Fill: var(--pf-t--global--color--status--warning--default);
   --pf-topology__node--m-selected--m-success--node__label__background--Fill: var(--pf-t--global--color--status--success--default);
+
+  --pf-topology__node--m--hover--m-selected--node__label__background--Fill: var(--pf-t--global--color--brand--default);
+  --pf-topology__node--m--hover--m-selected--m-info--node__label__background--Fill: var(--pf-t--global--background--color--floating--default);
+  --pf-topology__node--m--hover--m-selected--m-success--node__label__background--Fill: var(---pf-t--global--color--status--success--hover);
+  --pf-topology__node--m--hover--m-selected--m-warning--node__label__background--Fill: var(--pf-t--global--color--status--warning--hover);
+  --pf-topology__node--m--hover--m-selected--m-danger--node__label__background--Fill: var(--pf-t--global--color--status--danger--hover);
 
   /* node label icon */
   --pf-topology__node__label__icon--Color: var(--pf-t--global--icon--color--regular);
@@ -306,7 +312,7 @@
 }
 
 .pf-topology__node.pf-m-hover.pf-m-info .pf-topology__node__background {
-  --pf-topology__node__background--Stroke: var(--pf-topology__node--m-info--Background--Stroke);
+  --pf-topology__node__background--Stroke: var(--pf-topology__node--m-hover--m-info--node__label__background--Stroke);
 }
 
 .pf-topology__node.pf-m-success .pf-topology__node__background {
@@ -403,12 +409,24 @@
   --pf-topology__node__action-icon__icon--Color: var(--pf-topology__node--m-selected--action-icon__icon--Color);
 }
 
-.pf-topology__node.pf-m-info {
-  --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m-info--node__label__background--Stroke);
+.pf-topology__node.pf-m-info.pf-m-selected {
+  --pf-topology__node__label__background--Stroke: var(--pf-t--global--border--color--nonstatus--blue--default);
+}
+
+.pf-topology__node.pf-m-selected.pf-m-hovered  {
+  --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m-selected--node__label__background--Stroke);
+  --pf-topology__node__label__background--Fill: var(--pf-topology__node--m-selected--node__label__background--Fill);
+  --pf-topology__node__separator--Stroke: var(--pf-topology__node--m-selected--node__label__text--m-secondary--Fill);
+  --pf-topology__node__action-icon__icon--Color: var(--pf-topology__node--m-selected--action-icon__icon--Color);
 }
 
 .pf-topology__node.pf-m-hover.pf-m-info {
   --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m--hover--m-info--node__label__background--Stroke);
+}
+
+.pf-topology__node.pf-m-hover.pf-m-selected.pf-m-info {
+  --pf-topology__node__label__background--Fill: var(--pf-t--global--color--nonstatus--blue--hover);
+  --pf-topology__node__label__background--Stroke: var(--pf-t--global--color--nonstatus--blue--hover);
 }
 
 .pf-topology__node.pf-m-success {
@@ -418,11 +436,23 @@
   --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m--hover--m-success--node__label__background--Stroke);
 }
 
+.pf-topology__node.pf-m-hover.pf-m-selected.pf-m-success {
+  --pf-topology__node__label__background--Fill: var(--pf-topology__node--m--hover--m-selected--m-success--node__label__background--Fill);
+  --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m--hover--m-success--node__label__background--Stroke);
+}
+
 .pf-topology__node.pf-m-warning {
   --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m-warning--node__label__background--Stroke);
 }
 
+
+
 .pf-topology__node.pf-m-hover.pf-m-warning {
+  --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m--hover--m-warning--node__label__background--Stroke);
+}
+
+.pf-topology__node.pf-m-hover.pf-m-selected.pf-m-warning {
+  --pf-topology__node__label__background--Fill: var(--pf-topology__node--m--hover--m-selected--m-warning--node__label__background--Fill);
   --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m--hover--m-warning--node__label__background--Stroke);
 }
 
@@ -432,6 +462,12 @@
 
 .pf-topology__node.pf-m-hover.pf-m-danger {
   --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m--hover--m-danger--node__label__background--Stroke);
+}
+
+.pf-topology__node.pf-m-hover.pf-m-selected.pf-m-danger {
+  --pf-topology__node__label__background--Fill: var(--pf-topology__node--m--hover--m-selected--m-danger--node__label__background--Fill);
+  --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m--hover--m-danger--node__label__background--Stroke);
+
 }
 
 
@@ -455,6 +491,7 @@
 
 .pf-topology__node.pf-m-selected.pf-m-success {
   --pf-topology__node__label__background--Fill: var(--pf-topology__node--m-selected--m-success--node__label__background--Fill);
+  --pf-topology__node__label__background--Stroke: var(--pf-topology__node--m-selected--m-success--node__label__background--Stroke);
   --pf-topology__node--m-selected--node__label__text--Fill: var(--pf-topology__node--m-selected--m-success--node__label__text--Fill);
   --pf-topology__node--m-selected--node__label__text--m-secondary--Fill: var(--pf-topology__node--m-selected--m-success--node__label__text--m-secondary--Fill);
 }
@@ -491,9 +528,6 @@
   stroke: var(--pf-topology__node--m-selected--label__icon__background--Stroke);
 }
 
-.pf-topology__node.pf-m-info .pf-topology__node__label__icon__background {
-  stroke: var(--pf-topology__node--m-info--label__icon__background--Stroke);
-}
 
 .pf-topology__node.pf-m-success .pf-topology__node__label__icon__background {
   stroke: var(--pf-topology__node--m-success--label__icon__background--Stroke);
