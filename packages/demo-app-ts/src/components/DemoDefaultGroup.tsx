@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useLayoutEffect } from 'react';
 import { observer } from 'mobx-react';
 import {
   useCombineRefs,
@@ -11,7 +11,8 @@ import {
   WithDndDragProps,
   useAnchor,
   RectAnchor,
-  GraphElement
+  GraphElement,
+  Dimensions
 } from '@patternfly/react-topology';
 
 type GroupProps = {
@@ -42,6 +43,23 @@ const DemoDefaultGroup: React.FunctionComponent<GroupProps> = ({
   const boxRef = useRef<Rect | null>(null);
   const refs = useCombineRefs<SVGRectElement>(dragNodeRef, dndDragRef, dndDropRef);
 
+  // Collapsed groups need a non-zero size so edge anchors have a real target.
+  useLayoutEffect(() => {
+    if (!nodeElement.isCollapsed()) {
+      return;
+    }
+    const data = nodeElement.getData() || {};
+    const width = data.collapsedWidth || 60;
+    const height = data.collapsedHeight || 60;
+    const current = nodeElement.getDimensions();
+    if (current.width > 0 && current.height > 0) {
+      return;
+    }
+    const center = nodeElement.getBounds().getCenter();
+    nodeElement.setDimensions(new Dimensions(width, height));
+    nodeElement.setBounds(nodeElement.getBounds().setCenter(center.x, center.y));
+  });
+
   if (!droppable || !boxRef.current) {
     // change the box only when not dragging
     boxRef.current = nodeElement.getBounds();
@@ -51,7 +69,7 @@ const DemoDefaultGroup: React.FunctionComponent<GroupProps> = ({
     fill = 'lightgreen';
   } else if (canDrop && droppable) {
     fill = 'lightblue';
-  } else if (element.getData()) {
+  } else if (element.getData()?.background) {
     fill = element.getData().background;
   }
 
