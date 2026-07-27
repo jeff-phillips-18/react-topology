@@ -15,6 +15,7 @@ import {
   SELECTION_STATE,
   WithSelectionProps
 } from '@patternfly/react-topology';
+import { useAggregateEdgesDemo } from './DemoContext';
 
 type AggregateEdgeProps = {
   element: GraphElement;
@@ -296,6 +297,7 @@ const computeSnapPlan = (edge: Edge, role: string | undefined, precise: boolean)
  * Aggregate edge: cheap AABB snaps while layout moves, hull refine after settle.
  */
 const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element, selected, ...rest }) => {
+  const { snapGeneration } = useAggregateEdgesDemo();
   const edge = element as Edge;
   if (!edge.hasController()) {
     return null;
@@ -318,6 +320,7 @@ const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element
 
   const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rafRef = useRef(0);
+  const lastSnapGenerationRef = useRef(snapGeneration);
 
   useEffect(() => {
     if (role !== 'bridge' && role !== 'exit' && role !== 'entry') {
@@ -328,8 +331,12 @@ const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element
       return undefined;
     }
 
-    // Update snaps in place while moving — do not clear endpoints here (causes blink).
-    // Endpoints are cleared on collapse rebuild in AggregateEdges.applyDemoModel.
+    // Force snap after layout end / collapse (snapGeneration bump); soft threshold while dragging.
+    const forceSnap = lastSnapGenerationRef.current !== snapGeneration;
+    lastSnapGenerationRef.current = snapGeneration;
+    const moveThreshold = forceSnap ? 0 : MOVE_SNAP_THRESHOLD;
+    const settleThreshold = forceSnap ? 0 : HULL_SNAP_THRESHOLD;
+
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
     }
@@ -339,22 +346,25 @@ const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element
       }
       const plan = computeSnapPlan(edge, role, false);
       if (plan) {
-        applySnapPlan(edge, plan, MOVE_SNAP_THRESHOLD, true);
+        applySnapPlan(edge, plan, moveThreshold, true);
       }
     });
 
     if (settleTimerRef.current) {
       clearTimeout(settleTimerRef.current);
     }
-    settleTimerRef.current = setTimeout(() => {
-      if (!edge.hasController()) {
-        return;
-      }
-      const plan = computeSnapPlan(edge, role, true);
-      if (plan) {
-        applySnapPlan(edge, plan, HULL_SNAP_THRESHOLD, true);
-      }
-    }, HULL_SETTLE_MS);
+    settleTimerRef.current = setTimeout(
+      () => {
+        if (!edge.hasController()) {
+          return;
+        }
+        const plan = computeSnapPlan(edge, role, true);
+        if (plan) {
+          applySnapPlan(edge, plan, settleThreshold, true);
+        }
+      },
+      forceSnap ? 0 : HULL_SETTLE_MS
+    );
 
     return () => {
       if (rafRef.current) {
@@ -364,7 +374,7 @@ const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element
         clearTimeout(settleTimerRef.current);
       }
     };
-  }, [edge, role, geoKey]);
+  }, [edge, role, geoKey, snapGeneration]);
 
   const handleSelect = (e: MouseEvent) => {
     e.stopPropagation();

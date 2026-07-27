@@ -7,6 +7,8 @@ import {
   Graph,
   GraphComponent,
   GraphElement,
+  GRAPH_LAYOUT_END_EVENT,
+  GraphLayoutEndEventListener,
   isEdge,
   isNode,
   Layout,
@@ -76,16 +78,20 @@ interface DemoDisplayOptions {
 const applyDemoModel = (
   controller: Visualization,
   options: DemoDisplayOptions,
-  opts: { layout?: boolean; merge?: boolean } = {}
+  opts: { layout?: boolean; merge?: boolean; clearEndpoints?: boolean } = {}
 ) => {
-  const { layout = false, merge = true } = opts;
+  const { layout = false, merge = true, clearEndpoints = false } = opts;
   action(() => {
     const model = getModel({
       ...options,
       collapsedIds: collectCollapsedIds(controller)
     });
     controller.fromModel(model, merge);
-    clearAggregateEdgeEndpoints(controller);
+    // Only clear on collapse/expand — clearing on tag/label toggles leaves edges
+    // unsnapped until something moves (geoKey unchanged → no AggregateEdge effect).
+    if (clearEndpoints) {
+      clearAggregateEdgeEndpoints(controller);
+    }
     if (layout) {
       controller.getGraph().layout();
       controller.getGraph().fit(80);
@@ -98,12 +104,25 @@ const AggregateEdgesView: React.FunctionComponent<{ controller: Visualization }>
   const [groupEdges, setGroupEdges] = useState(true);
   const [showEdgeLabels, setShowEdgeLabels] = useState(false);
   const [showMetricTags, setShowMetricTags] = useState(false);
+  const [snapGeneration, setSnapGeneration] = useState(0);
   const fittedRef = useRef(false);
   const optionsRef = useRef<DemoDisplayOptions>({ groupEdges, showEdgeLabels, showMetricTags });
   optionsRef.current = { groupEdges, showEdgeLabels, showMetricTags };
 
+  const bumpSnapGeneration = useCallback(() => {
+    setSnapGeneration((g) => g + 1);
+  }, []);
+
   useEventListener<SelectionEventListener>(SELECTION_EVENT, (ids) => {
     setSelectedIds(ids);
+  });
+
+  // After Cola finishes, force-resnap — mid-layout snaps often leave stubs pointing nowhere.
+  useEventListener<GraphLayoutEndEventListener>(GRAPH_LAYOUT_END_EVENT, () => {
+    action(() => {
+      clearAggregateEdgeEndpoints(controller);
+    })();
+    bumpSnapGeneration();
   });
 
   useEffect(() => {
@@ -124,12 +143,13 @@ const AggregateEdgesView: React.FunctionComponent<{ controller: Visualization }>
   const onCollapseChange = useCallback(
     (_group: Node, _collapsed: boolean) => {
       // Collapse is already applied on the Node by DefaultGroup; rebuild aggregates only.
-      applyDemoModel(controller, optionsRef.current, { merge: true, layout: false });
+      applyDemoModel(controller, optionsRef.current, { merge: true, layout: false, clearEndpoints: true });
+      bumpSnapGeneration();
     },
-    [controller]
+    [controller, bumpSnapGeneration]
   );
 
-  const demoContext = useMemo(() => ({ onCollapseChange }), [onCollapseChange]);
+  const demoContext = useMemo(() => ({ onCollapseChange, snapGeneration }), [onCollapseChange, snapGeneration]);
 
   const viewToolbar = (
     <ToolbarGroup>

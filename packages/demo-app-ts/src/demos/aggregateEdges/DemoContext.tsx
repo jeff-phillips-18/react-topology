@@ -3,10 +3,13 @@ import { Node } from '@patternfly/react-topology';
 
 export interface AggregateEdgesDemoContextValue {
   onCollapseChange: (group: Node, collapsed: boolean) => void;
+  /** Bumped after layout end / collapse so AggregateEdge force-resnaps. */
+  snapGeneration: number;
 }
 
 const AggregateEdgesDemoContext = createContext<AggregateEdgesDemoContextValue>({
-  onCollapseChange: () => undefined
+  onCollapseChange: () => undefined,
+  snapGeneration: 0
 });
 
 export const AggregateEdgesDemoProvider = AggregateEdgesDemoContext.Provider;
