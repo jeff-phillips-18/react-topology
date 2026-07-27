@@ -6,6 +6,9 @@ import {
   DefaultNode,
   Graph,
   GraphComponent,
+  GraphElement,
+  isEdge,
+  isNode,
   Layout,
   LayoutFactory,
   ModelKind,
@@ -39,51 +42,92 @@ const layoutFactory: LayoutFactory = (_type: string, graph: Graph): Layout | und
     initialAllConstraintsIterations: 50
   });
 
+/** Read collapse from live nodes — NodeModel.collapsed is the source of truth. */
+const collectCollapsedIds = (controller: Visualization): Set<string> => {
+  const ids = new Set<string>();
+  controller.getElements().forEach((element: GraphElement) => {
+    if (isNode(element) && element.isGroup() && element.isCollapsed()) {
+      ids.add(element.getId());
+    }
+  });
+  return ids;
+};
+
+/**
+ * Reused bridge/stub elements keep setStartPoint/setEndPoint overrides across collapse.
+ * Clear them so anchors recompute against the new collapsed bounds.
+ */
+const clearAggregateEdgeEndpoints = (controller: Visualization) => {
+  controller.getElements().forEach((element) => {
+    if (!isEdge(element) || element.getType() !== 'aggregate-edge') {
+      return;
+    }
+    element.setStartPoint();
+    element.setEndPoint();
+  });
+};
+
+interface DemoDisplayOptions {
+  groupEdges: boolean;
+  showEdgeLabels: boolean;
+  showMetricTags: boolean;
+}
+
+const applyDemoModel = (
+  controller: Visualization,
+  options: DemoDisplayOptions,
+  opts: { layout?: boolean; merge?: boolean } = {}
+) => {
+  const { layout = false, merge = true } = opts;
+  action(() => {
+    const model = getModel({
+      ...options,
+      collapsedIds: collectCollapsedIds(controller)
+    });
+    controller.fromModel(model, merge);
+    clearAggregateEdgeEndpoints(controller);
+    if (layout) {
+      controller.getGraph().layout();
+      controller.getGraph().fit(80);
+    }
+  })();
+};
+
 const AggregateEdgesView: React.FunctionComponent<{ controller: Visualization }> = ({ controller }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [groupEdges, setGroupEdges] = useState(true);
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
   const [showEdgeLabels, setShowEdgeLabels] = useState(false);
   const [showMetricTags, setShowMetricTags] = useState(false);
   const fittedRef = useRef(false);
+  const optionsRef = useRef<DemoDisplayOptions>({ groupEdges, showEdgeLabels, showMetricTags });
+  optionsRef.current = { groupEdges, showEdgeLabels, showMetricTags };
 
   useEventListener<SelectionEventListener>(SELECTION_EVENT, (ids) => {
     setSelectedIds(ids);
   });
 
   useEffect(() => {
-    action(() => {
-      const isFirstLoad = !fittedRef.current;
-      // Merge after first load so collapse/option toggles keep node positions.
-      controller.fromModel(
-        getModel({
-          groupEdges,
-          collapsedIds,
-          showEdgeLabels,
-          showMetricTags
-        }),
-        !isFirstLoad
-      );
-      if (isFirstLoad) {
-        controller.getGraph().layout();
-        controller.getGraph().fit(80);
-        fittedRef.current = true;
+    const isFirstLoad = !fittedRef.current;
+    applyDemoModel(
+      controller,
+      { groupEdges, showEdgeLabels, showMetricTags },
+      {
+        merge: !isFirstLoad,
+        layout: isFirstLoad
       }
-      // Collapse / label toggles: skip Cola re-run — AggregateEdge snaps to outlines.
-    })();
-  }, [controller, collapsedIds, groupEdges, showEdgeLabels, showMetricTags]);
+    );
+    if (isFirstLoad) {
+      fittedRef.current = true;
+    }
+  }, [controller, groupEdges, showEdgeLabels, showMetricTags]);
 
-  const onCollapseChange = useCallback((group: Node, collapsed: boolean) => {
-    setCollapsedIds((prev) => {
-      const next = new Set(prev);
-      if (collapsed) {
-        next.add(group.getId());
-      } else {
-        next.delete(group.getId());
-      }
-      return next;
-    });
-  }, []);
+  const onCollapseChange = useCallback(
+    (_group: Node, _collapsed: boolean) => {
+      // Collapse is already applied on the Node by DefaultGroup; rebuild aggregates only.
+      applyDemoModel(controller, optionsRef.current, { merge: true, layout: false });
+    },
+    [controller]
+  );
 
   const demoContext = useMemo(() => ({ onCollapseChange }), [onCollapseChange]);
 

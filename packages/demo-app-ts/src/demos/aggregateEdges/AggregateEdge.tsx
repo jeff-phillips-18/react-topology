@@ -30,9 +30,17 @@ const HULL_SNAP_THRESHOLD = 2;
 const HULL_SETTLE_MS = 100;
 
 const findRelatedBridge = (stub: Edge): Edge | undefined => {
+  if (!stub.hasController()) {
+    return undefined;
+  }
+
   const bridgeId = stub.getData()?.bridgeId as string | undefined;
   if (bridgeId) {
-    return stub.getController().getEdgeById(bridgeId);
+    try {
+      return stub.getController().getEdgeById(bridgeId);
+    } catch {
+      return undefined;
+    }
   }
 
   const bridgeKey = stub.getData()?.bridgeKey as string | undefined;
@@ -289,6 +297,10 @@ const computeSnapPlan = (edge: Edge, role: string | undefined, precise: boolean)
  */
 const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element, selected, ...rest }) => {
   const edge = element as Edge;
+  if (!edge.hasController()) {
+    return null;
+  }
+
   const data = edge.getData() || {};
   const role = data.role as string | undefined;
   const count = data.count as number | undefined;
@@ -312,10 +324,19 @@ const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element
       return undefined;
     }
 
+    if (!edge.hasController()) {
+      return undefined;
+    }
+
+    // Update snaps in place while moving — do not clear endpoints here (causes blink).
+    // Endpoints are cleared on collapse rebuild in AggregateEdges.applyDemoModel.
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
     }
     rafRef.current = requestAnimationFrame(() => {
+      if (!edge.hasController()) {
+        return;
+      }
       const plan = computeSnapPlan(edge, role, false);
       if (plan) {
         applySnapPlan(edge, plan, MOVE_SNAP_THRESHOLD, true);
@@ -326,6 +347,9 @@ const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element
       clearTimeout(settleTimerRef.current);
     }
     settleTimerRef.current = setTimeout(() => {
+      if (!edge.hasController()) {
+        return;
+      }
       const plan = computeSnapPlan(edge, role, true);
       if (plan) {
         applySnapPlan(edge, plan, HULL_SNAP_THRESHOLD, true);
@@ -344,6 +368,9 @@ const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element
 
   const handleSelect = (e: MouseEvent) => {
     e.stopPropagation();
+    if (!edge.hasController()) {
+      return;
+    }
     const relatedIds = getRelatedSegmentIds(edge);
     const ordered = [edge.getId(), ...relatedIds.filter((id) => id !== edge.getId())];
     const state = edge.getController().getState<{ [SELECTION_STATE]?: string[] }>();

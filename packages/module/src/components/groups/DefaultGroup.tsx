@@ -1,3 +1,4 @@
+import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import DefaultGroupExpanded from './DefaultGroupExpanded';
 import { OnSelect, WithDndDragProps, ConnectDragSource, ConnectDropTarget } from '../../behavior';
@@ -96,10 +97,12 @@ type DefaultGroupInnerProps = Omit<DefaultGroupProps, 'element'> & { element: No
 const DefaultGroupInner: React.FunctionComponent<DefaultGroupInnerProps> = observer(
   ({ className, element, onCollapseChange, ...rest }) => {
     const handleCollapse = (group: Node, collapsed: boolean): void => {
-      if (collapsed && rest.collapsedWidth !== undefined && rest.collapsedHeight !== undefined) {
-        group.setDimensions(new Dimensions(rest.collapsedWidth, rest.collapsedHeight));
-      }
-      group.setCollapsed(collapsed);
+      action(() => {
+        if (collapsed && rest.collapsedWidth !== undefined && rest.collapsedHeight !== undefined) {
+          group.setDimensions(new Dimensions(rest.collapsedWidth, rest.collapsedHeight));
+        }
+        group.setCollapsed(collapsed);
+      })();
       onCollapseChange && onCollapseChange(group, collapsed);
     };
 
