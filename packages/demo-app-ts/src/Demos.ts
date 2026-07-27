@@ -13,7 +13,7 @@ import { ContextMenus } from './demos/ContextMenus';
 import { TopologyPackage } from './demos/topologyPackageDemo/TopologyPackage';
 import { ComplexGroup } from './demos/Groups';
 import { CollapsibleGroups } from './demos/CollapsibleGroups';
-import { AggregateEdges } from './demos/AggregateEdges';
+import { AggregateEdges } from './demos/aggregateEdges/AggregateEdges';
 import { StatusConnectors } from './demos/statusConnectorsDemo/StatusConnectors';
 
 import './Demo.css';

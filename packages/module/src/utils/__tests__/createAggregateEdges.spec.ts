@@ -263,6 +263,18 @@ describe('createAggregateEdges', () => {
       expect(result[0].visible).toBe(true);
     });
 
+    it('stores bridgeId on stubs for O(1) bridge lookup', () => {
+      const edges = [edge('n1', 'n4')];
+      const result = aggregate(edges, nodes, opts);
+      const exit = byRole(result, 'exit')[0];
+      const bridge = byRole(result, 'bridge')[0];
+      const entry = byRole(result, 'entry')[0];
+
+      expect(exit.data.bridgeId).toBe(bridge.id);
+      expect(entry.data.bridgeId).toBe(bridge.id);
+      expect(bridge.data.bridgeId).toBeUndefined();
+    });
+
     it('places a leaf label on the bridge so multi-part paths keep one label', () => {
       const edges = [{ ...edge('n1', 'n4'), label: 'traffic' }];
       const result = aggregate(edges, nodes, opts);
