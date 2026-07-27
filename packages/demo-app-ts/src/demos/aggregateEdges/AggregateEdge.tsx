@@ -297,7 +297,7 @@ const computeSnapPlan = (edge: Edge, role: string | undefined, precise: boolean)
  * Aggregate edge: cheap AABB snaps while layout moves, hull refine after settle.
  */
 const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element, selected, ...rest }) => {
-  const { snapGeneration } = useAggregateEdgesDemo();
+  const { snapGeneration, showEdgeLabels, showMetricTags } = useAggregateEdgesDemo();
   const edge = element as Edge;
   if (!edge.hasController()) {
     return null;
@@ -400,8 +400,8 @@ const AggregateEdge: FunctionComponent<AggregateEdgeProps> = observer(({ element
     endTerminalType = EdgeTerminalType.directional;
   }
 
-  const customLabel = edge.getLabel();
-  const metricTag = data.tag as string | undefined;
+  const customLabel = showEdgeLabels ? edge.getLabel() : undefined;
+  const metricTag = showMetricTags ? (data.tag as string) : undefined;
   const tag = customLabel || metricTag || (role === 'bridge' && count && count > 1 ? String(count) : undefined);
 
   return (

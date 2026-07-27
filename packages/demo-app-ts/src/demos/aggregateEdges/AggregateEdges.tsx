@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { action } from 'mobx';
 import { ToolbarGroup, ToolbarItem, Checkbox } from '@patternfly/react-core';
 import {
@@ -14,7 +14,6 @@ import {
   Layout,
   LayoutFactory,
   ModelKind,
-  Node,
   SELECTION_EVENT,
   SelectionEventListener,
   TopologyView,
@@ -24,14 +23,15 @@ import {
   withDragNode,
   withPanZoom,
   withSelection,
-  useEventListener
+  useEventListener,
+  observer
 } from '@patternfly/react-topology';
 import DemoControlBar from '../DemoControlBar';
 import AggregateEdge from './AggregateEdge';
 import AggregateGroup from './AggregateGroup';
-import { AggregateEdgesDemoProvider } from './DemoContext';
 import LabeledDefaultEdge from './LabeledDefaultEdge';
 import { getModel } from './model';
+import { AggregateEdgesDemoModel, AggregateEdgesDemoProvider, useAggregateEdgesDemo } from './DemoContext';
 
 const layoutFactory: LayoutFactory = (_type: string, graph: Graph): Layout | undefined =>
   new ColaLayout(graph, {
@@ -101,19 +101,21 @@ const applyDemoModel = (
   })();
 };
 
-const AggregateEdgesView: React.FunctionComponent<{ controller: Visualization }> = ({ controller }) => {
+const AggregateEdgesView: React.FunctionComponent<{ controller: Visualization }> = observer(({ controller }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [groupEdges, setGroupEdges] = useState(true);
-  const [showEdgeLabels, setShowEdgeLabels] = useState(false);
-  const [showMetricTags, setShowMetricTags] = useState(false);
-  const [snapGeneration, setSnapGeneration] = useState(0);
+  const {
+    groupEdges,
+    setGroupEdges,
+    showEdgeLabels,
+    setShowEdgeLabels,
+    showMetricTags,
+    setShowMetricTags,
+    setOnCollapseChange,
+    bumpSnapGeneration
+  } = useAggregateEdgesDemo();
   const fittedRef = useRef(false);
   const optionsRef = useRef<DemoDisplayOptions>({ groupEdges, showEdgeLabels, showMetricTags });
   optionsRef.current = { groupEdges, showEdgeLabels, showMetricTags };
-
-  const bumpSnapGeneration = useCallback(() => {
-    setSnapGeneration((g) => g + 1);
-  }, []);
 
   useEventListener<SelectionEventListener>(SELECTION_EVENT, (ids) => {
     setSelectedIds(ids);
@@ -142,16 +144,13 @@ const AggregateEdgesView: React.FunctionComponent<{ controller: Visualization }>
     }
   }, [controller, groupEdges, showEdgeLabels, showMetricTags]);
 
-  const onCollapseChange = useCallback(
-    (_group: Node, _collapsed: boolean) => {
+  useEffect(() => {
+    setOnCollapseChange(() => {
       // Collapse is already applied on the Node by DefaultGroup; rebuild aggregates only.
       applyDemoModel(controller, optionsRef.current, { merge: true, layout: false, clearEndpoints: true });
       bumpSnapGeneration();
-    },
-    [controller, bumpSnapGeneration]
-  );
-
-  const demoContext = useMemo(() => ({ onCollapseChange, snapGeneration }), [onCollapseChange, snapGeneration]);
+    });
+  }, [bumpSnapGeneration, controller, setOnCollapseChange]);
 
   const viewToolbar = (
     <ToolbarGroup>
@@ -187,13 +186,11 @@ const AggregateEdgesView: React.FunctionComponent<{ controller: Visualization }>
   );
 
   return (
-    <AggregateEdgesDemoProvider value={demoContext}>
-      <TopologyView controlBar={<DemoControlBar />} viewToolbar={viewToolbar}>
-        <VisualizationSurface state={{ selectedIds }} />
-      </TopologyView>
-    </AggregateEdgesDemoProvider>
+    <TopologyView controlBar={<DemoControlBar />} viewToolbar={viewToolbar}>
+      <VisualizationSurface state={{ selectedIds }} />
+    </TopologyView>
   );
-};
+});
 
 export const AggregateEdges = () => {
   const [controller] = useState(() => {
@@ -229,8 +226,10 @@ export const AggregateEdges = () => {
   });
 
   return (
-    <VisualizationProvider controller={controller}>
-      <AggregateEdgesView controller={controller} />
-    </VisualizationProvider>
+    <AggregateEdgesDemoProvider value={new AggregateEdgesDemoModel()}>
+      <VisualizationProvider controller={controller}>
+        <AggregateEdgesView controller={controller} />
+      </VisualizationProvider>
+    </AggregateEdgesDemoProvider>
   );
 };

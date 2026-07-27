@@ -1,17 +1,64 @@
 import { createContext, useContext } from 'react';
-import { Node } from '@patternfly/react-topology';
+import { action, makeObservable, observable } from 'mobx';
 
-export interface AggregateEdgesDemoContextValue {
-  onCollapseChange: (group: Node, collapsed: boolean) => void;
-  /** Bumped after layout end / collapse so AggregateEdge force-resnaps. */
-  snapGeneration: number;
+export class AggregateEdgesDemoModel {
+  private groupEdgesP: boolean = false;
+  protected showEdgeLabelsP: boolean = false;
+  protected showMetricTagsP: boolean = false;
+  protected snapGenerationP: number = 0;
+  protected onCollapseChangeP: () => void;
+
+  constructor() {
+    makeObservable<
+      AggregateEdgesDemoModel,
+      'groupEdgesP' | 'showEdgeLabelsP' | 'showMetricTagsP' | 'snapGenerationP' | 'onCollapseChangeP'
+    >(this, {
+      groupEdgesP: observable,
+      showEdgeLabelsP: observable,
+      showMetricTagsP: observable,
+      onCollapseChangeP: observable,
+      snapGenerationP: observable,
+      setGroupEdges: action,
+      setShowEdgeLabels: action,
+      setShowMetricTags: action,
+      bumpSnapGeneration: action,
+      setOnCollapseChange: action
+    });
+  }
+
+  public get groupEdges(): boolean {
+    return this.groupEdgesP;
+  }
+  public setGroupEdges = (grouped: boolean): void => {
+    this.groupEdgesP = grouped;
+  };
+  public get showEdgeLabels(): boolean {
+    return this.showEdgeLabelsP;
+  }
+  public setShowEdgeLabels = (show: boolean): void => {
+    this.showEdgeLabelsP = show;
+  };
+  public get showMetricTags(): boolean {
+    return this.showMetricTagsP;
+  }
+  public setShowMetricTags = (show: boolean): void => {
+    this.showMetricTagsP = show;
+  };
+  public get snapGeneration(): number {
+    return this.snapGenerationP;
+  }
+  public bumpSnapGeneration = (): void => {
+    this.snapGenerationP = this.snapGenerationP + 1;
+  };
+  public get onCollapseChange(): () => void {
+    return this.onCollapseChangeP;
+  }
+  public setOnCollapseChange = (onChange: () => void): void => {
+    this.onCollapseChangeP = onChange;
+  };
 }
-
-const AggregateEdgesDemoContext = createContext<AggregateEdgesDemoContextValue>({
-  onCollapseChange: () => undefined,
-  snapGeneration: 0
-});
+export const AggregateEdgesDemoContext = createContext<AggregateEdgesDemoModel>(new AggregateEdgesDemoModel());
 
 export const AggregateEdgesDemoProvider = AggregateEdgesDemoContext.Provider;
 
-export const useAggregateEdgesDemo = (): AggregateEdgesDemoContextValue => useContext(AggregateEdgesDemoContext);
+export const useAggregateEdgesDemo = (): AggregateEdgesDemoModel => useContext(AggregateEdgesDemoContext);

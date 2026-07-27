@@ -90,7 +90,7 @@ const link = (source: string, target: string, options: { label?: string; bps?: n
   ...(options.bps != null ? { data: { bps: options.bps } } : {})
 });
 
-export const getModel = ({ groupEdges, collapsedIds, showEdgeLabels, showMetricTags }: DemoOptions): Model => {
+export const getModel = ({ groupEdges, collapsedIds }: DemoOptions): Model => {
   const group1Nodes = [leaf('11', '1-1'), leaf('12', '1-2'), leaf('13', '1-3')];
   const group2Nodes = [leaf('21', '2-1'), leaf('22', '2-2'), leaf('23', '2-3'), leaf('24', '2-4'), leaf('25', '2-5')];
   const subGroup1Nodes = [leaf('14', '1-4'), leaf('15', '1-5')];
@@ -141,42 +141,39 @@ export const getModel = ({ groupEdges, collapsedIds, showEdgeLabels, showMetricT
     });
   }
 
-  const label = (text: string) => (showEdgeLabels ? text : undefined);
-  const bps = (value: number) => (showMetricTags ? value : undefined);
-
   const edges: EdgeModel[] = [
     // Intra-group edges (should stay visible when aggregating between groups)
-    link('11', '12', { label: label('local'), bps: bps(120) }),
-    link('12', '13', { bps: bps(80) }),
-    link('14', '15', { bps: bps(40) }),
-    link('21', '22', { bps: bps(60) }),
-    link('22', '23', { bps: bps(90) }),
-    link('24', '25', { bps: bps(50) }),
-    link('31', '32', { bps: bps(70) }),
-    link('32', '33', { bps: bps(30) }),
+    link('11', '12', { label: 'local', bps: 120 }),
+    link('12', '13', { bps: 80 }),
+    link('14', '15', { bps: 40 }),
+    link('21', '22', { bps: 60 }),
+    link('22', '23', { bps: 90 }),
+    link('24', '25', { bps: 50 }),
+    link('31', '32', { bps: 70 }),
+    link('32', '33', { bps: 30 }),
     // Group 1 → Group 2  (bridge should sum these rates)
-    link('11', '21', { label: label('traffic'), bps: bps(400) }),
-    link('12', '21', { bps: bps(500) }),
-    link('13', '21', { bps: bps(300) }),
+    link('11', '21', { label: 'traffic', bps: 400 }),
+    link('12', '21', { bps: 500 }),
+    link('13', '21', { bps: 300 }),
     // Ungrouped → Subgroup 3 members
-    link('1', '31', { label: label('ingress'), bps: bps(250) }),
-    link('1', '32', { bps: bps(150) }),
-    link('2', '31', { bps: bps(200) }),
+    link('1', '31', { label: 'ingress', bps: 250 }),
+    link('1', '32', { bps: 150 }),
+    link('2', '31', { bps: 200 }),
     // Node → group id (ungrouped node targets the group itself)
-    link('2', 'Group 2', { label: label('attach'), bps: bps(180) }),
-    link('1', 'Subgroup 3', { bps: bps(100) }),
+    link('2', 'Group 2', { label: 'attach', bps: 180 }),
+    link('1', 'Subgroup 3', { bps: 100 }),
     // Group 2 ↔ Subgroup 3 (bidirectional mix)
-    link('21', '31', { label: label('mesh'), bps: bps(350) }),
-    link('32', '21', { bps: bps(220) }),
-    link('21', '32', { bps: bps(180) }),
-    link('22', '31', { bps: bps(140) }),
-    link('22', '32', { bps: bps(160) }),
+    link('21', '31', { label: 'mesh', bps: 350 }),
+    link('32', '21', { bps: 220 }),
+    link('21', '32', { bps: 180 }),
+    link('22', '31', { bps: 140 }),
+    link('22', '32', { bps: 160 }),
     // Subgroup ↔ subgroup under different parents
-    link('14', '31', { label: label('peer'), bps: bps(90) }),
-    link('15', '32', { bps: bps(110) }),
-    link('33', '14', { bps: bps(75) }),
+    link('14', '31', { label: 'peer', bps: 90 }),
+    link('15', '32', { bps: 110 }),
+    link('33', '14', { bps: 75 }),
     // Cross nest: Group 2 member → Group 1
-    link('23', '11', { label: label('sync'), bps: bps(450) })
+    link('23', '11', { label: 'sync', bps: 450 })
   ];
 
   let resultEdges = createAggregateEdges('aggregate-edge', edges, nodes, {
@@ -189,9 +186,7 @@ export const getModel = ({ groupEdges, collapsedIds, showEdgeLabels, showMetricT
     delete n.collapsed;
   });
 
-  if (showMetricTags) {
-    resultEdges = applyMetricTags(resultEdges);
-  }
+  resultEdges = applyMetricTags(resultEdges);
 
   return {
     graph: {
