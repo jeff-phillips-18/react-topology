@@ -58,8 +58,7 @@ const readGroupPadding = (group: Node): number => {
   return 17;
 };
 
-/** Inflated ellipse — cheap stand-in for the hull while layout is moving. */
-const approxBorderFacing = (group: Node, toward: Node): XY => {
+const ellipseOnBounds = (group: Node, toward: Node): XY => {
   const b = group.getBounds();
   const cx = b.x + b.width / 2;
   const cy = b.y + b.height / 2;
@@ -85,6 +84,72 @@ const approxBorderFacing = (group: Node, toward: Node): XY => {
   };
 };
 
+interface AnchorWithSvg {
+  svgElement?: SVGElement;
+  getLocation: (reference: Point) => Point;
+}
+
+const getAnchorSvg = (group: Node, end: AnchorEnd): SVGElement | undefined => {
+  const anchor = group.getAnchor(end) as AnchorWithSvg | undefined;
+  return anchor?.svgElement;
+};
+
+/** Motion-time outline snap: coarse hull path sample, or O(1) for rect/ellipse. */
+const approxBorderFacing = (group: Node, toward: Node, end: AnchorEnd = AnchorEnd.both): XY => {
+  const reference = toward.getBounds().getCenter();
+  const svg = getAnchorSvg(group, end);
+
+  if (svg instanceof SVGRectElement || svg instanceof SVGEllipseElement || svg instanceof SVGCircleElement) {
+    const loc = group.getAnchor(end).getLocation(reference);
+    return { x: loc.x, y: loc.y };
+  }
+
+  if (svg instanceof SVGPathElement && svg.viewportElement) {
+    try {
+      const localRef = reference.clone();
+      group.translateFromParent(localRef);
+
+      const pathLength = svg.getTotalLength();
+      if (pathLength > 0) {
+        const box = svg.getBBox();
+        const cx = box.x + box.width / 2;
+        const cy = box.y + box.height / 2;
+        const vx = localRef.x - cx;
+        const vy = localRef.y - cy;
+        const vLen = Math.hypot(vx, vy) || 1;
+
+        const samples = 16;
+        let best: XY | undefined;
+        let bestScore = Infinity;
+        for (let i = 0; i < samples; i++) {
+          const p = svg.getPointAtLength((pathLength * i) / samples);
+          const wx = p.x - cx;
+          const wy = p.y - cy;
+          const dot = vx * wx + vy * wy;
+          if (dot <= 0) {
+            continue;
+          }
+          const cross = Math.abs(vx * wy - vy * wx) / vLen;
+          if (cross < bestScore) {
+            bestScore = cross;
+            best = { x: p.x, y: p.y };
+          }
+        }
+
+        if (best) {
+          const pt = new Point(best.x, best.y);
+          group.translateToParent(pt);
+          return { x: pt.x, y: pt.y };
+        }
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  return ellipseOnBounds(group, toward);
+};
+
 const hullBorderFacing = (group: Node, toward: Node, end: AnchorEnd = AnchorEnd.both): XY => {
   const reference = toward.getBounds().getCenter();
   const anchor = group.getAnchor(end);
@@ -92,7 +157,7 @@ const hullBorderFacing = (group: Node, toward: Node, end: AnchorEnd = AnchorEnd.
     const loc = anchor.getLocation(reference);
     return { x: loc.x, y: loc.y };
   }
-  return approxBorderFacing(group, toward);
+  return approxBorderFacing(group, toward, end);
 };
 
 const getPathPeer = (stub: Edge, role: 'exit' | 'entry', bridge: Edge): Node | undefined => {
@@ -188,7 +253,7 @@ const computeSnapPlan = (edge: Edge, role: string | undefined, precise: boolean)
 
   const borderFacing = precise
     ? (group: Node, toward: Node, end?: AnchorEnd) => hullBorderFacing(group, toward, end)
-    : (group: Node, toward: Node) => approxBorderFacing(group, toward);
+    : (group: Node, toward: Node, end?: AnchorEnd) => approxBorderFacing(group, toward, end ?? AnchorEnd.both);
 
   if (role === 'bridge') {
     return {
