@@ -4,9 +4,14 @@ const COLLAPSED_SIZE = 60;
 
 export interface DemoOptions {
   groupEdges: boolean;
-  collapsedIds: Set<string>;
   showEdgeLabels: boolean;
   showMetricTags: boolean;
+  /**
+   * Live collapsed group ids from the controller. Used only to feed
+   * createAggregateEdges — never written onto NodeModels returned for fromModel
+   * (Node.isCollapsed() remains the source of truth).
+   */
+  collapsedIds?: Set<string>;
 }
 
 const leaf = (id: string, label: string): NodeModel => ({
@@ -18,23 +23,15 @@ const leaf = (id: string, label: string): NodeModel => ({
   shape: NodeShape.ellipse
 });
 
-const groupNode = (
-  id: string,
-  label: string,
-  children: string[],
-  options: { collapsed?: boolean; background?: string } = {}
-): NodeModel => ({
+const groupNode = (id: string, label: string, children: string[], background = '#f0f0f0'): NodeModel => ({
   id,
   type: 'group',
   label,
   group: true,
   children,
-  collapsed: options.collapsed,
-  // Collapsed groups need explicit size so edge anchors have a real target.
-  ...(options.collapsed ? { width: COLLAPSED_SIZE, height: COLLAPSED_SIZE } : {}),
   style: { padding: 20 },
   data: {
-    background: options.background ?? '#f0f0f0',
+    background,
     collapsedWidth: COLLAPSED_SIZE,
     collapsedHeight: COLLAPSED_SIZE,
     collapsible: true
@@ -94,8 +91,6 @@ const link = (source: string, target: string, options: { label?: string; bps?: n
 });
 
 export const getModel = ({ groupEdges, collapsedIds, showEdgeLabels, showMetricTags }: DemoOptions): Model => {
-  const isCollapsed = (id: string) => collapsedIds.has(id);
-
   const group1Nodes = [leaf('11', '1-1'), leaf('12', '1-2'), leaf('13', '1-3')];
   const group2Nodes = [leaf('21', '2-1'), leaf('22', '2-2'), leaf('23', '2-3'), leaf('24', '2-4'), leaf('25', '2-5')];
   const subGroup1Nodes = [leaf('14', '1-4'), leaf('15', '1-5')];
@@ -105,28 +100,22 @@ export const getModel = ({ groupEdges, collapsedIds, showEdgeLabels, showMetricT
     'Subgroup 1',
     'Subgroup 1',
     subGroup1Nodes.map((n) => n.id),
-    { collapsed: isCollapsed('Subgroup 1'), background: '#fce8e8' }
+    '#fce8e8'
   );
   const subGroup3 = groupNode(
     'Subgroup 3',
     'Subgroup 3',
     subGroup3Nodes.map((n) => n.id),
-    { collapsed: isCollapsed('Subgroup 3'), background: '#e8f4fc' }
+    '#e8f4fc'
   );
-  const group1 = groupNode('Group 1', 'Group 1', [...group1Nodes.map((n) => n.id), subGroup1.id], {
-    collapsed: isCollapsed('Group 1'),
-    background: '#f5f0e6'
-  });
+  const group1 = groupNode('Group 1', 'Group 1', [...group1Nodes.map((n) => n.id), subGroup1.id], '#f5f0e6');
   const group2 = groupNode(
     'Group 2',
     'Group 2',
     group2Nodes.map((n) => n.id),
-    { collapsed: isCollapsed('Group 2'), background: '#eaf5ea' }
+    '#eaf5ea'
   );
-  const group3 = groupNode('Group 3', 'Group 3', [subGroup3.id], {
-    collapsed: isCollapsed('Group 3'),
-    background: '#f5eaf2'
-  });
+  const group3 = groupNode('Group 3', 'Group 3', [subGroup3.id], '#f5eaf2');
 
   const ungrouped = [leaf('1', 'One'), leaf('2', 'Two')];
 
@@ -142,6 +131,15 @@ export const getModel = ({ groupEdges, collapsedIds, showEdgeLabels, showMetricT
     subGroup3,
     group3
   ];
+
+  // Stamp collapse for createAggregateEdges only — stripped before return.
+  if (collapsedIds?.size) {
+    nodes.forEach((n) => {
+      if (collapsedIds.has(n.id)) {
+        n.collapsed = true;
+      }
+    });
+  }
 
   const label = (text: string) => (showEdgeLabels ? text : undefined);
   const bps = (value: number) => (showMetricTags ? value : undefined);
@@ -183,8 +181,12 @@ export const getModel = ({ groupEdges, collapsedIds, showEdgeLabels, showMetricT
 
   let resultEdges = createAggregateEdges('aggregate-edge', edges, nodes, {
     groupEdges,
-    // Always honor `collapsed` on nodes; when none are collapsed this is a no-op.
     collapsedGroups: true
+  });
+
+  // Drop collapsed so fromModel merge does not re-call setCollapsed.
+  nodes.forEach((n) => {
+    delete n.collapsed;
   });
 
   if (showMetricTags) {

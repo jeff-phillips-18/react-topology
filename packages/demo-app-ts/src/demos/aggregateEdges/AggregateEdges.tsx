@@ -44,7 +44,7 @@ const layoutFactory: LayoutFactory = (_type: string, graph: Graph): Layout | und
     initialAllConstraintsIterations: 50
   });
 
-/** Read collapse from live nodes — NodeModel.collapsed is the source of truth. */
+/** Live Node.isCollapsed() — used only as input to createAggregateEdges. */
 const collectCollapsedIds = (controller: Visualization): Set<string> => {
   const ids = new Set<string>();
   controller.getElements().forEach((element: GraphElement) => {
@@ -82,6 +82,8 @@ const applyDemoModel = (
 ) => {
   const { layout = false, merge = true, clearEndpoints = false } = opts;
   action(() => {
+    // Pass live collapse only for aggregation; getModel strips it before fromModel
+    // so we never re-drive Node.setCollapsed (DefaultGroup already owns that).
     const model = getModel({
       ...options,
       collapsedIds: collectCollapsedIds(controller)
@@ -218,7 +220,6 @@ export const AggregateEdges = () => {
     vis.fromModel(
       getModel({
         groupEdges: true,
-        collapsedIds: new Set(),
         showEdgeLabels: false,
         showMetricTags: false
       }),
